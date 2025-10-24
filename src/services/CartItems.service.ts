@@ -27,4 +27,10 @@ const deleteCartItem = async (id: number) => {
   return result;
 };
 
-export { createCartItem, getAllCartItems, getCartItemById, updateCartItem, deleteCartItem }; 
+// Xóa toàn bộ giỏ hàng theo user_id
+const deleteCartItemsByUserId = async (userId: number) => {
+  const result = await db.delete(cartItems).where(eq(cartItems.user_id, userId));
+  return result;
+};
+
+export { createCartItem, getAllCartItems, getCartItemById, updateCartItem, deleteCartItem, deleteCartItemsByUserId }; 

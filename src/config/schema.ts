@@ -87,13 +87,11 @@ export const vouchers = pgTable("vouchers", {
 export const orders = pgTable("orders", {
   id: serial("id").primaryKey(),
   buyer_id: integer("buyer_id").references(() => users.id),
-  seller_id: integer("seller_id").references(() => sellers.id),
-  sub_total: integer("sub_total").notNull(),
-  voucher_id: integer("voucher_id").references(() => vouchers.id),
+  order_code: text("order_code").notNull(),
   total: integer("total").notNull(),
   created_at: timestamp("created_at").defaultNow(),
   paid_at: timestamp("paid_at"),
-  status: text("status").notNull().default("pending"),
+  status: boolean("status").default(true),
 });
 
 export const orderItems = pgTable("order_items", {
@@ -111,7 +109,7 @@ export const post = pgTable("post", {
   title: text("title").notNull(),
   content: text("content").notNull(),
   created_at: timestamp("created_at").defaultNow(),
-  status: text("status").notNull().default("pending"),
+  status: boolean("status").default(true),
 });
 
 export const comments = pgTable("comments", {
@@ -120,7 +118,7 @@ export const comments = pgTable("comments", {
   sender_id: integer("sender_id").references(() => users.id),
   content: text("content").notNull(),
   created_at: timestamp("created_at").defaultNow(),
-  status: text("status").notNull().default("active"),
+  status: boolean("status").default(true),
   reply_to_id: integer("reply_to_id") ,
 });
 
@@ -130,7 +128,7 @@ export const payment = pgTable("payment", {
   trans_code: text("trans_code").notNull(),
   amount: integer("amount").notNull(),
   currency: text("currency").notNull(),
-  status: text("status").notNull().default("pending"),
+  status: boolean("status").default(true),
   paid_at: timestamp("paid_at"),
 });
 
@@ -142,7 +140,7 @@ export const accountpool = pgTable("account_pool", {
   password: text("password").notNull(),
   delivered: boolean("delivered").default(false),
   created_at: timestamp("created_at").defaultNow(),
-  status: text("status").notNull().default("pending"),
+  status: boolean("status").default(true),
 });
 
 export const keypool = pgTable("keypool", {
@@ -152,7 +150,7 @@ export const keypool = pgTable("keypool", {
   key_code: text("key_code").notNull(),
   delivered: boolean("delivered").default(false),
   created_at: timestamp("created_at").defaultNow(),
-  status: text("status").notNull().default("pending"),
+  status: boolean("status").default(true),
 });
 
 export const wishlist = pgTable("wishlist", {
@@ -160,5 +158,5 @@ export const wishlist = pgTable("wishlist", {
   user_id: integer("user_id").references(() => users.id),
   product_id: integer("product_id").references(() => products.id),
   created_at: timestamp("created_at").defaultNow(),
-  status: text("status").notNull().default("active"),
+  status: boolean("status").default(true),
 });
