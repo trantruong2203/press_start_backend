@@ -27,4 +27,9 @@ const deleteOrder = async (id: number) => {
   return result;
 };
 
-export { createOrder, getAllOrders, getOrderById, updateOrder, deleteOrder }; 
+const getOrderByOrderCode = async (orderCode: string) => {
+  const result = await db.select().from(orders).where(eq(orders.order_code, orderCode));
+  return result[0];
+};
+
+export { createOrder, getAllOrders, getOrderById, updateOrder, deleteOrder, getOrderByOrderCode }; 

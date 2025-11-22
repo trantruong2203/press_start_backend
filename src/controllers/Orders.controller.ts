@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { createOrder, deleteOrder, getAllOrders, getOrderById, updateOrder } from "../services/Orders.service";
+import { createOrder, deleteOrder, getAllOrders, getOrderById, updateOrder, getOrderByOrderCode } from "../services/Orders.service";
 
 const createOrderController = async (req: Request, res: Response) => {
   const order = req.body;
@@ -31,4 +31,26 @@ const deleteOrderController = async (req: Request, res: Response) => {
   res.status(200).json({ message: "Order deleted successfully", data: result });
 };
 
-export { createOrderController, getAllOrdersController, getOrderByIdController, updateOrderController, deleteOrderController }; 
+const getOrderStatusByOrderCodeController = async (req: Request, res: Response) => {
+  try {
+    const { orderCode } = req.params;
+    const order = await getOrderByOrderCode(orderCode);
+    
+    if (!order) {
+      return res.status(404).json({ message: "Order not found", status: false });
+    }
+    
+    res.status(200).json({ 
+      message: "Order status retrieved successfully", 
+      status: order.status,
+      orderCode: order.order_code,
+      total: order.total,
+      paid_at: order.paid_at
+    });
+  } catch (error) {
+    console.error("Error getting order status:", error);
+    res.status(500).json({ message: "Internal server error", status: false });
+  }
+};
+
+export { createOrderController, getAllOrdersController, getOrderByIdController, updateOrderController, deleteOrderController, getOrderStatusByOrderCodeController }; 
