@@ -56,6 +56,15 @@ app.use('/key-pool', keyPoolRouter);
 app.use('/wishlist', wishlistRouter);
 app.use('/payos', payOsRouter);
 
+
+
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error(err.stack);
+  const status = err.status || 500;
+  const message = err.message || 'Internal Server Error';
+  res.status(status).json({ message: message });
+});
+
 server.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`); 
 });

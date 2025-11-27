@@ -1,12 +1,46 @@
-import { Router } from   'express';
-import { createOrderController, deleteOrderController, getAllOrdersController, getOrderByIdController, updateOrderController, getOrderStatusByOrderCodeController } from "../controllers/Orders.controller";
+import { Router } from "express";
+import {
+  createOrderController,
+  deleteOrderController,
+  getAllOrdersController,
+  getOrderByIdController,
+  getOrderStatusByOrderCodeController,
+  updateOrderController,
+} from "../controllers/Orders.controller";
+import { validateRequest } from "../middlewares/validation.middleware";
+import {
+  idParamSchema,
+  orderCodeParamSchema,
+  orderCreateSchema,
+  orderUpdateSchema,
+} from "../validation/schemas";
 
 const router = Router();
 
-router.post('/', createOrderController);
-router.get('/', getAllOrdersController);
-router.get('/:id', getOrderByIdController);
-router.get('/status/:orderCode', getOrderStatusByOrderCodeController);
-router.put('/:id', updateOrderController);
-router.delete('/:id', deleteOrderController);
+router.post(
+  "/",
+  validateRequest({ body: orderCreateSchema }),
+  createOrderController,
+);
+router.get("/", getAllOrdersController);
+router.get(
+  "/status/:orderCode",
+  validateRequest({ params: orderCodeParamSchema }),
+  getOrderStatusByOrderCodeController,
+);
+router.get(
+  "/:id",
+  validateRequest({ params: idParamSchema }),
+  getOrderByIdController,
+);
+router.put(
+  "/:id",
+  validateRequest({ params: idParamSchema, body: orderUpdateSchema }),
+  updateOrderController,
+);
+router.delete(
+  "/:id",
+  validateRequest({ params: idParamSchema }),
+  deleteOrderController,
+);
 export default router; 

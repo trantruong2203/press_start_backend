@@ -24,6 +24,7 @@ export interface OrderUpdateResult {
   success: boolean;
   order?: any;
   error?: string;
+  warning?: string;
 }
 
 // 🏪 Service xử lý webhook PayOS
@@ -52,11 +53,14 @@ export class WebhookService {
         };
       }
 
-    // 2. Tạo order_items từ cart_items trước khi xóa giỏ hàng
-    if (orderResult.order?.buyer_id) {
-      await this.createOrderItemsFromCart(orderResult.order.id, orderResult.order.buyer_id, requestId);
-      await this.clearUserCart(orderResult.order.buyer_id, requestId);
-    }
+      // 2. Tạo order_items từ cart_items trước khi xóa giỏ hàng
+      // Skip if order doesn't exist (test webhook case)
+      if (orderResult.order?.buyer_id) {
+        await this.createOrderItemsFromCart(orderResult.order.id, orderResult.order.buyer_id, requestId);
+        await this.clearUserCart(orderResult.order.buyer_id, requestId);
+      } else if (orderResult.warning) {
+        console.log(`⚠️ [${requestId}] Skipping cart processing: ${orderResult.warning}`);
+      }
 
       // 3. Có thể thêm các xử lý khác
       await this.handlePostPaymentActions(webhookData, orderResult.order, requestId);
@@ -90,17 +94,10 @@ export class WebhookService {
     try {
       console.log(`⏳ [${requestId}] Processing pending/failed payment for order: ${webhookData.orderCode}`);
 
-      // Log trạng thái thanh toán
       await this.logPaymentStatus(webhookData, requestId);
-
-      // Có thể thêm logic khác như:
-      // - Gửi notification cho user
-      // - Cập nhật trạng thái đơn hàng (nếu cần)
-      // - Xử lý retry logic
 
     } catch (error) {
       console.error(`❌ [${requestId}] Error processing pending/failed payment:`, error);
-      // Không throw error vì đây không phải là lỗi nghiêm trọng
     }
   }
 
@@ -133,9 +130,11 @@ export class WebhookService {
         .returning();
 
       if (!updatedOrder) {
+        console.log(`⚠️ [${requestId || 'unknown'}] Order not found with order_code: ${orderCode} (might be a test webhook)`);
         return {
-          success: false,
-          error: `Order not found with order_code: ${orderCode}`
+          success: true,
+          order: null,
+          warning: `Order not found with order_code: ${orderCode}`
         };
       }
 
@@ -162,7 +161,6 @@ export class WebhookService {
       console.log(`🧹 [${requestId || 'unknown'}] Cart cleared for user ${userId}`);
     } catch (error) {
       console.log(`⚠️ [${requestId || 'unknown'}] Failed to clear cart for user ${userId}:`, error);
-      // Không throw error vì việc xóa giỏ hàng không quan trọng bằng việc cập nhật đơn hàng
     }
   }
 

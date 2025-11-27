@@ -192,32 +192,14 @@ export const payosWebhook = async (req: Request, res: Response) => {
     const payload = req.body as any;
     const requestId = `webhook_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
-    console.log(`🔔 [${requestId}] PayOS Webhook received:`, {
+    console.log(`🔔 [${requestId}] PayOS Webhook received (Verified by Middleware):`, {
       timestamp: new Date().toISOString(),
-      headers: {
-        'content-type': req.headers['content-type'],
-        'user-agent': req.headers['user-agent'],
-        'x-payos-signature': req.headers['x-payos-signature'] ? '[PRESENT]' : '[MISSING]'
-      },
       payload: JSON.stringify(payload, null, 2)
     });
     
-    // 1) Xác thực chữ ký PayOS với multiple methods
-    const verificationResult = await verifyPayOSWebhook(req, payload);
-    
-    if (!verificationResult.isValid) {
-      console.log(`❌ [${requestId}] Webhook verification failed:`, verificationResult.error);
-      return res.status(403).json({ 
-        message: 'Webhook verification failed',
-        error: verificationResult.error,
-        requestId 
-      });
-    }
-    
-    console.log(`✅ [${requestId}] Webhook verification successful using method: ${verificationResult.method}`);
-
-    // 2) Validate và extract dữ liệu giao dịch
-    const webhookData = extractWebhookData(payload);
+    // 1) Dữ liệu đã được verify bởi middleware, chỉ cần extract
+    // Sử dụng dữ liệu đã parse từ middleware nếu có
+    const webhookData = req.webhookData || extractWebhookData(payload);
     orderCode = webhookData.orderCode;
     
     if (!orderCode) {
@@ -237,7 +219,7 @@ export const payosWebhook = async (req: Request, res: Response) => {
       transactionId: webhookData.transactionId
     });
 
-    // 3) Xử lý business logic dựa trên trạng thái thanh toán
+    // 2) Xử lý business logic dựa trên trạng thái thanh toán
     if (webhookData.isPaymentSuccess) {
       // Convert webhookData to match service interface
       const serviceWebhookData = {
@@ -308,83 +290,6 @@ export const payosWebhook = async (req: Request, res: Response) => {
     });
   }
 };
-
-// 🔐 Helper function: Xác thực webhook PayOS với multiple methods
-async function verifyPayOSWebhook(req: Request, payload: any): Promise<WebhookVerificationResult> {
-  try {
-    // Method 1: Sử dụng PayOS SDK (nếu có)
-    try {
-      // @ts-ignore
-      if (typeof (payos as any).verifyPaymentWebhookData === 'function') {
-        // @ts-ignore
-        const isValid = (payos as any).verifyPaymentWebhookData(payload) === true;
-        if (isValid) {
-          return { isValid: true, method: 'PayOS SDK' };
-        }
-      }
-    } catch (error) {
-      console.log("⚠️ PayOS SDK verification failed:", error);
-    }
-
-    // Method 2: Xác thực bằng HMAC signature từ header
-    const signatureHeader = req.headers['x-payos-signature'] as string | undefined;
-    if (signatureHeader && PAYOS_CHECKSUM_KEY) {
-      try {
-        const hmac = crypto.createHmac('sha256', PAYOS_CHECKSUM_KEY);
-        hmac.update(JSON.stringify(payload));
-        const expectedSignature = hmac.digest('hex');
-        
-        if (signatureHeader === expectedSignature) {
-          return { isValid: true, method: 'HMAC Header' };
-        }
-      } catch (error) {
-        console.log("⚠️ HMAC header verification failed:", error);
-      }
-    }
-
-    // Method 3: Xác thực bằng signature trong payload
-    const signatureBody = payload?.signature as string | undefined;
-    if (signatureBody && PAYOS_CHECKSUM_KEY) {
-      try {
-        const hmac = crypto.createHmac('sha256', PAYOS_CHECKSUM_KEY);
-        hmac.update(JSON.stringify(payload));
-        const expectedSignature = hmac.digest('hex');
-        
-        if (signatureBody === expectedSignature) {
-          return { isValid: true, method: 'HMAC Payload' };
-        }
-      } catch (error) {
-        console.log("⚠️ HMAC payload verification failed:", error);
-      }
-    }
-
-    // Method 4: Xác thực bằng checksum (nếu có)
-    if (payload?.checksum && PAYOS_CHECKSUM_KEY) {
-      try {
-        const hmac = crypto.createHmac('sha256', PAYOS_CHECKSUM_KEY);
-        hmac.update(JSON.stringify(payload));
-        const expectedChecksum = hmac.digest('hex');
-        
-        if (payload.checksum === expectedChecksum) {
-          return { isValid: true, method: 'Checksum' };
-        }
-      } catch (error) {
-        console.log("⚠️ Checksum verification failed:", error);
-      }
-    }
-
-    return { 
-      isValid: false, 
-      error: 'All verification methods failed. Missing or invalid signature/checksum.' 
-    };
-
-  } catch (error) {
-    return { 
-      isValid: false, 
-      error: `Verification error: ${error instanceof Error ? error.message : 'Unknown error'}` 
-    };
-  }
-}
 
 function extractWebhookData(payload: any): WebhookData {
   const data = payload?.data ?? {};

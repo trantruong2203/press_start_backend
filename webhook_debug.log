@@ -1,0 +1,39 @@
+
+----------------------------------------
+Timestamp: 2025-11-25T11:00:27.597Z
+Headers: {
+  "host": "unliberal-astonishingly-karri.ngrok-free.dev",
+  "user-agent": "axios/1.8.4",
+  "content-length": "613",
+  "accept": "application/json, text/plain, */*",
+  "accept-encoding": "gzip, compress, deflate, br",
+  "content-type": "application/json",
+  "x-forwarded-for": "203.171.29.218",
+  "x-forwarded-host": "unliberal-astonishingly-karri.ngrok-free.dev",
+  "x-forwarded-proto": "https"
+}
+Body: {
+  "code": "00",
+  "desc": "success",
+  "success": true,
+  "data": {
+    "accountNumber": "8816616003",
+    "amount": 2000,
+    "description": "CSLUHNWOS09 Don hang 68403869",
+    "reference": "253b3b7f-b675-48a9-bf18-18f0dd415385",
+    "transactionDateTime": "2025-11-25 18:00:27",
+    "virtualAccountNumber": "V3CAS8816616003",
+    "counterAccountBankId": "",
+    "counterAccountBankName": "",
+    "counterAccountName": null,
+    "counterAccountNumber": null,
+    "virtualAccountName": "",
+    "currency": "VND",
+    "orderCode": 1764068403869,
+    "paymentLinkId": "ab78eb6b3b3444e189cb27a689d9024b",
+    "code": "00",
+    "desc": "success"
+  },
+  "signature": "c125060971c57b65d24dfec83abfead79590d3860137313c043b80990d111483"
+}
+----------------------------------------

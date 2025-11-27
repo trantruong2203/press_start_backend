@@ -1,10 +1,24 @@
-import express from 'express';
-import { createCheckoutLink, payosWebhook, checkPayOSConfig, testWebhook, testCreateOrderItems, getOrderStats } from '../controllers/PayOsController';
-import { 
-  verifyPayOSWebhook, 
-  parseWebhookData, 
-  webhookRateLimit 
-} from '../middlewares/webhook.middleware';
+import express from "express";
+import {
+  checkPayOSConfig,
+  createCheckoutLink,
+  getOrderStats,
+  payosWebhook,
+  testCreateOrderItems,
+  testWebhook,
+} from "../controllers/PayOsController";
+import {
+  parseWebhookData,
+  verifyPayOSWebhook,
+  webhookRateLimit,
+} from "../middlewares/webhook.middleware";
+import { validateRequest } from "../middlewares/validation.middleware";
+import {
+  orderCodeParamSchema,
+  payOsCheckoutSchema,
+  payOsTestOrderItemsSchema,
+  payOsTestWebhookSchema,
+} from "../validation/schemas";
 
 const router = express.Router();
 
@@ -12,7 +26,11 @@ const router = express.Router();
 router.get('/config', checkPayOSConfig);
 
 // 💳 API tạo link thanh toán
-router.post('/checkout-link', createCheckoutLink);
+router.post(
+  "/checkout-link",
+  validateRequest({ body: payOsCheckoutSchema }),
+  createCheckoutLink,
+);
 
 // 🔔 Webhook endpoint với middleware bảo mật
 router.post('/webhook', 
@@ -24,12 +42,24 @@ router.post('/webhook',
 );
 
 // 🧪 Test webhook endpoint (chỉ dùng cho development)
-router.post('/test-webhook', testWebhook);
+router.post(
+  "/test-webhook",
+  validateRequest({ body: payOsTestWebhookSchema }),
+  testWebhook,
+);
 
 // 🛒 Test tạo order_items từ cart (chỉ dùng cho development)
-router.post('/test-create-order-items', testCreateOrderItems);
+router.post(
+  "/test-create-order-items",
+  validateRequest({ body: payOsTestOrderItemsSchema }),
+  testCreateOrderItems,
+);
 
 // 📊 Xem thống kê order với order_items (chỉ dùng cho development)
-router.get('/order-stats/:orderCode', getOrderStats);
+router.get(
+  "/order-stats/:orderCode",
+  validateRequest({ params: orderCodeParamSchema }),
+  getOrderStats,
+);
 
 export default router;

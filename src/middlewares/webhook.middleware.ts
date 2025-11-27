@@ -1,26 +1,33 @@
 import { Request, Response, NextFunction } from 'express';
 import crypto from 'crypto';
+import fs from 'fs';
+import path from 'path';
 
 const PAYOS_CHECKSUM_KEY = process.env.PAYOS_CHECKSUM_KEY as string | undefined;
 
 // 🔐 Middleware xác thực webhook PayOS
-export const verifyPayOSWebhook = (req: Request, res: Response, next: NextFunction) => {
+import { payos } from '../config/payOs';
+
+// 🔐 Middleware xác thực webhook PayOS
+export const verifyPayOSWebhook = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const payload = req.body;
-    const signatureHeader = req.headers['x-payos-signature'] as string | undefined;
-    const signatureBody = payload?.signature as string | undefined;
-    const signature = signatureHeader || signatureBody;
-
-    // Kiểm tra có signature không
-    if (!signature) {
-      console.log("❌ Missing signature in webhook");
-      return res.status(400).json({ 
-        message: 'Missing signature',
-        code: 'MISSING_SIGNATURE'
-      });
+    
+    // 📝 DEBUG: Log request to file (Keep this for debugging)
+    try {
+      const logPath = path.join(__dirname, '../../webhook_debug.log');
+      const logData = `
+----------------------------------------
+Timestamp: ${new Date().toISOString()}
+Headers: ${JSON.stringify(req.headers, null, 2)}
+Body: ${JSON.stringify(payload, null, 2)}
+----------------------------------------
+`;
+      fs.appendFileSync(logPath, logData);
+    } catch (err) {
+      console.error("Failed to write debug log:", err);
     }
 
-    // Kiểm tra có checksum key không
     if (!PAYOS_CHECKSUM_KEY) {
       console.log("❌ Missing PAYOS_CHECKSUM_KEY environment variable");
       return res.status(500).json({ 
@@ -29,31 +36,27 @@ export const verifyPayOSWebhook = (req: Request, res: Response, next: NextFuncti
       });
     }
 
-    // Tạo HMAC signature để so sánh
-    const hmac = crypto.createHmac('sha256', PAYOS_CHECKSUM_KEY);
-    hmac.update(JSON.stringify(payload));
-    const expectedSignature = hmac.digest('hex');
+    // Use PayOS SDK to verify webhook signature
+    const webhookData = await payos.webhooks.verify(req.body);
     
-    if (signature !== expectedSignature) {
-      console.log("❌ Invalid signature:", { 
-        received: signature, 
-        expected: expectedSignature 
-      });
-      return res.status(403).json({ 
-        message: 'Invalid signature',
-        code: 'INVALID_SIGNATURE'
-      });
+    // If webhooks.verify doesn't throw, it's valid.
+    // It returns the data object if valid.
+    
+    console.log('✅ Webhook verified successfully:', webhookData);
+    
+    // Attach verified data to request for convenience
+    if (webhookData) {
+        // Optional: you can use webhookData directly
     }
 
-    console.log("✅ Webhook signature verified successfully");
     next();
     
   } catch (error) {
     console.error('❌ Webhook verification error:', error);
-    return res.status(500).json({ 
-      message: 'Webhook verification failed',
+    return res.status(403).json({ 
+      message: 'Invalid signature',
       error: error instanceof Error ? error.message : 'Unknown error',
-      code: 'VERIFICATION_ERROR'
+      code: 'INVALID_SIGNATURE'
     });
   }
 };
@@ -166,6 +169,8 @@ export const webhookRateLimit = (req: Request, res: Response, next: NextFunction
 
 // Extend Request interface để include webhookData
 declare global {
+  var webhookRateLimit: Map<string, { count: number; resetTime: number }>;
+
   namespace Express {
     interface Request {
       webhookData?: {

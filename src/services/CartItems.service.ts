@@ -27,7 +27,6 @@ const deleteCartItem = async (id: number) => {
   return result;
 };
 
-// Xóa toàn bộ giỏ hàng theo user_id
 const deleteCartItemsByUserId = async (userId: number) => {
   const result = await db.delete(cartItems).where(eq(cartItems.user_id, userId));
   return result;
