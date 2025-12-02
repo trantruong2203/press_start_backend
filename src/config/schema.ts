@@ -71,8 +71,8 @@ export const platforms = pgTable("platforms", {
 
 export const cartItems = pgTable("cart_items", {
   id: serial("id").primaryKey(),
-  user_id: integer("user_id").references(() => users.id),
-  product_id: integer("product_id").references(() => products.id),
+  user_id: integer("user_id").notNull().references(() => users.id),
+  product_id: integer("product_id").notNull().references(() => products.id),
   quantity: integer("quantity").notNull(),
   created_at: timestamp("created_at").defaultNow(),
 });
